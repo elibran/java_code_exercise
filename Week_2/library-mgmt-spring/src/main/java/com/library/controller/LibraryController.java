@@ -1,29 +1,56 @@
 package com.library.controller;
 
-import com.library.model.Book;
 import com.library.service.LibraryService;
-import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import com.library.exception.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/v1/api/library")
+@CrossOrigin(origins = "*")
 public class LibraryController {
-    private LibraryService libraryService;
 
+    private final LibraryService libraryService;
+
+    @Autowired
     public LibraryController(LibraryService libraryService) {
         this.libraryService = libraryService;
     }
 
-    @GetMapping("/ping")
-    public String ping() {
-        return "Welcome to the Banking API! in some changed format";
+    @PostMapping("/borrow")
+    public ResponseEntity<Map<String, String>> borrowBook(
+            @RequestParam String memberId,
+            @RequestParam String bookId) {
+
+        try {
+            libraryService.borrowBook(memberId, bookId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Book borrowed successfully",
+                    "memberId", memberId,
+                    "bookId", bookId
+            ));
+        } catch (MemberNotFoundException | BookNotFoundException | BookNotAvailableException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    @PostMapping("addBook")
-    public ResponseEntity<String> addBook(@Valid @RequestBody Book book){
-        String message = libraryService.addBook(book);
-        return new ResponseEntity<>(message, HttpStatus.CREATED);
+    @PostMapping("/return")
+    public ResponseEntity<Map<String, String>> returnBook(
+            @RequestParam String memberId,
+            @RequestParam String bookId) {
+
+        try {
+            libraryService.returnBook(memberId, bookId);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Book returned successfully",
+                    "memberId", memberId,
+                    "bookId", bookId
+            ));
+        } catch (MemberNotFoundException | BookNotFoundException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }
